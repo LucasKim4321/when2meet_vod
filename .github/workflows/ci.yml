@@ -67,7 +67,7 @@ jobs:
         run: poetry install --no-root
 
       - name: Run tests
-        run:
+        run: |
           poetry run coverage run -m pytest .
           poetry run coverage report -m
 
