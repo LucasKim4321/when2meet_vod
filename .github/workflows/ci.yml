@@ -44,7 +44,7 @@ jobs:
 
 
   test:   # 전체 테스트 실행
-    runs-on: unbuntu-22.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out the codes
         uses: actions/checkout@v2
