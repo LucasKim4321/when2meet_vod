@@ -19,9 +19,3 @@ class CreateMeetingResponse(BaseModel):
             description="미팅 url 코드. unique 합니다.",
         ),
     ]  # description 설명 작성
-    custom_code: Annotated[
-        str,
-        Field(
-            description="미팅 url 코드. unique 합니다.",
-        ),
-    ]  # description 설명 작성
