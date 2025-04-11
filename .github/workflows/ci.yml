@@ -83,7 +83,7 @@ jobs:
 
 
       - name: Install dependencies
-        if: steps.cache-venv.cache-hit != "true"
+        if: steps.cache-venv.outputs.cache-hit != 'true'
         run: poetry install --no-root
 
       - name: Run tests
