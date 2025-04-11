@@ -55,14 +55,35 @@ jobs:
         with:
           python-version: "3.13"
 
+      # 캐시 기능을 사용해 매번 설치하는 낭비를 줄임
+      # key와 path는 필수
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2
+        with:
+          key: poetry-2.1.2  # 	캐시 구분용 키 (버전별로 다르게 구분)
+          path: ~/.local/   # poetry는 ~/.local에 설치되므로, 이 디렉터리를 통째로 캐시할 것입니다.
+
       - name: Install Poetry
+        # 캐시를 못 쓰는 경우에 poetry를 설치
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://install.python-poetry.org | python3 - --version 2.1.2
 
       - name: Register Poetry bin
         run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
 
+      - name: Cache dependencies
+        id: cache-venv
+        uses: actions/cache@v2
+        with:
+          # 전체 파일을 비교하는 것보다 hash값만 비교하는게 빠름.
+          key: python-${{ steps.setup-python.outputs.python-version }}-poetry-lock-${{ hashFiles('poetry.lock') }}-toml-${{ hashFiles('pyproject.toml') }}-poetry-2.1.2
+          path: /home/runner/.cache/pypoetry/virtualenvs/
+
+
       - name: Install dependencies
+        if: steps.cache-venv.cache-hit != "true"
         run: poetry install --no-root
 
       - name: Run tests
