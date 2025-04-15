@@ -10,6 +10,7 @@ from app.utils.base62 import Base62
 
 squid = sqids.Sqids()
 
+
 class Squids:
 
     @classmethod
@@ -17,19 +18,22 @@ class Squids:
     def encode(cls, nums: Sequence[int]) -> str:  # 시퀸스 자료형으로 하면 리스트, 튜플 둘 다 받아진다.
         return squid.encode(nums)
 
-def do_squids():
+
+def do_squids() -> str:
     now = datetime.now()
     return Squids.encode(
-        [now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond, random.randint(1,9)]
+        [now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond, random.randint(1, 9)]
     )
 
-def  do_base62():
+
+def do_base62() -> str:
     uu = uuid.uuid4()
     return Base62.encode(uu.int)
 
+
 if __name__ == "__main__":
-    # print(do_squids())
-    # print(do_base62())
+    print(do_squids())
+    print(do_base62())
 
     # sqids가 base62에 비해 많이 느리지만 기능은 좀 더 있을 수 있음.
     print(timeit.timeit(lambda: do_squids(), number=10000))
@@ -42,4 +46,3 @@ if __name__ == "__main__":
 # uuid.uuid4().int는 128비트 정수
 # 하지만 sqids.encode()는 64비트까지만 지원
 # print(Squids.encode([uuid.uuid4().int]))
-

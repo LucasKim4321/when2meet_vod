@@ -1,5 +1,4 @@
 import string
-import uuid
 from typing import ClassVar, Final
 
 # from typing import Final은 변경되지 않아야 할 "상수" 값을 선언할 때 사용하는 타입 힌트입니다.
