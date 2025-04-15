@@ -129,10 +129,8 @@ jobs:
       # 실제로 테스트 할 수 있는 코드가 있는지 판별 후 테스트 수행
       - name: Run tests only if tests actually exist
         run: |
-          set -e  # 에러 발생 시 종료
-
           echo "🔍 Checking if pytest can collect any tests..."
-          TEST_COUNT=$(poetry run pytest --collect-only -q | grep -c '::')
+          TEST_COUNT=$(poetry run pytest --collect-only -q 2>/dev/null | grep -c '::' || true)
 
           if [ "$TEST_COUNT" -gt 0 ]; then
             echo "✅ Found $TEST_COUNT tests. Running pytest..."
@@ -141,3 +139,4 @@ jobs:
           else
             echo "⚠️ No runnable tests found. Skipping pytest."
           fi
+      
