@@ -109,8 +109,18 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: poetry install --no-root
 
-      - name: Run tests
-        run: |
-          poetry run coverage run -m pytest .
-          poetry run coverage report -m
+#      - name: Run tests
+#        run: |
+#          poetry run coverage run -m pytest .
+#          poetry run coverage report -m
 
+      # 테스트 파일이 있는 경우에만 실행
+      - name: Run tests only if test files exist
+        run: |
+          if find . -type f -name 'test_*.py' | grep -q .; then
+            echo "✅ Test files found. Running pytest..."
+            poetry run coverage run -m pytest .
+            poetry run coverage report -m
+          else
+            echo "⚠️ No test files found. Skipping tests."
+          fi
