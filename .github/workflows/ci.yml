@@ -139,4 +139,20 @@ jobs:
           else
             echo "⚠️ No runnable tests found. Skipping pytest."
           fi
-      
+
+      # pytest --collect-only : 테스트 수집
+      # pytest --collect-only -q: 테스트 목록만 출력
+      # grep -c '::': 테스트 개수 세기
+      # poetry run pytest ... || true → 테스트 없어서 실패해도 정상 종료 처리 (최종 종료 코드는 0)
+      # grep -c '::'로 실제 수집 가능한 테스트 개수를 정확히 판별
+
+      # 테스트가 없는 경우 pytest는 종료 코드를 5로 반환합니다 → "수행할 테스트가 없음"
+      # GitHub Actions는 0이 아닌 모든 종료 코드를 실패로 간주
+
+      # pytest 종료 코드 (exit code)
+      # 0	테스트 성공 (모든 테스트 통과)
+      # 1	테스트 실패 (어떤 테스트든 실패함)
+      # 2	사용법 에러 (예: 잘못된 인자)
+      # 3	내부 에러
+      # 4	pytest 플러그인 에러
+      # 5	테스트 없음 (no tests collected)
