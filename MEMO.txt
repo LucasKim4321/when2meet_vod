@@ -1,0 +1,394 @@
+
+
+-------------------------------------------------
+Day3 FastAPI에서 만나는 RESTAPI 설계와 식별자 관리
+-------------------------------------------------
+
+# ch17 [공통]미팅_생성_spec
+
+참조
+notion/part2/미팅 생성 API의 스펙 만들기/첫 번째 api, “미팅 생성” api 스펙 만들기
+
+미팅 생성 API의 스펙 만들기
+
+실무에서는 구현을 먼저 하는것이 아니라 스펙을 머저 작성하는게 더 좋다.
+
+스펙 + 더미 데이터를 리턴하는  API를 먼저 만들면 동료 프론트엔드 개발자가 작얼을 일찍 시작할 수 있다.
+
+개발 시작전 전체 테스트 실행
+
+ORJSON
+
+
+## DTO란? (Data Transfer Object)
+
+- data 를 “전달”하기 위한 목적으로 생성한 객체를 의미합니다.
+- dto 는 오직 데이터를 “전달”만 해야 하며, 데이터를 수정, 추가, 삭제하면 안됩니다. (수정 추가 삭제를 하는 순간부터 dto 는 dto 가 아니게 됩니다.)
+- “정보이론”을 배우신 분들이라면 “정보의 양이 변경된다면” dto 가 아니라고 할 수 있겠습니다.
+- pydantic basemodel 을 상속하는 `CreateMeetingResponse` 가 현재 dto 입니다.
+
+## Dto 를 쓰고, Dict 를 쓰지 마세요!
+만약 path operation function 에서 `CreateMeetingResponse` 가 아닌 `dict[str, str]` 을 사용한다면 어떻게 될까요?
+dict를 사용할 순 있지만 FastAPI의 기능을 제대로 사용할 수 없음.
+
+정리
+
+- 구현 보다 앞서 스펙을 동료들과 확정하고, 스펙 + 더미 response 먼저 만들어 배포하자.
+- timeit 을 사용해서 간단한 파이썬 코드조각을 성능테스트 할 수 있다.  성능테스트의 수치는 좋은 방어수단이된다. 합리화 할 수 있다.
+- pydantic 으로 dto 를 생성할 수 있다.
+- dict 대신 dto 를 사용하자!
+
+
+# ch18 [공통]미팅_생성_spec_swagger
+
+참조
+notion/part2/미팅 생성 API의 스펙 만들기/첫 번째 api, “미팅 생성” api 스펙 만들기
+
+
+# ch19 [공통]uuid4_와_base64_로_고유식별자_만들기
+
+참조
+notion/part2/미팅 생성 API의 스펙 만들기/uuid 와 base62 를 사용하는 방법 (강의에서 선택한 방법)
+
+# base62
+
+- uuid 와 base62 를 사용하는 방법 (강의에서 선택한 방법)
+
+    “고유하고”, “충분히 짧고”, “alphanumeric 인” 식별자를 만드는 방법을 2가지 소개하겠습니다.
+
+    첫번째 방법은 python 내장 라이브러리만 사용해서 구현하며, 강의에서 앞으로 이 방법을 사용해서 식별자를 생성해 낼 예정입니다.
+
+    - `app/utils/base62.py`
+
+        ```python
+        import string
+        from typing import Final, ClassVar
+
+        class Base62:
+            BASE: Final[ClassVar[str]] = string.ascii_letters + string.digits
+            BASE_LEN: Final[ClassVar[int]] = len(BASE)
+
+            @classmethod
+            def encode(cls, num: int) -> str:
+                if num < 0:
+                    raise ValueError(f"{cls}.encode() needs positive integer but you passed: {num}")
+
+                if num == 0:
+                    return cls.BASE[0]
+
+                result = []
+                while num:
+                    num, remainder = divmod(num, cls.BASE_LEN)
+                    result.append(cls.BASE[remainder])
+                return "".join(result)
+
+        ```
+
+    - `Base62.encode()` 를 호출하면 인자로 전달받은 int 가 고유한 문자열 식별자로 변환되도록 만들 것입니다.
+
+    base64, base62 등등 base 계열 encoding 방식의 동작 원리는 다음과 같습니다.
+
+    1. 결과 값에 들어갈 수 있는 문자, 숫자를 미리 지정합니다. 이 값들의 개수가 64개면 base64 가 되고, 62개면 base62 가 됩니다.
+        1. 앞으로 “결과 값에 들어갈 수 있는 문자, 숫자” 가 모두 들어있는 문자열을 `base` 라고 부르겠습니다.
+        2. base 의 개수를 `base_len` 이라고 부르겠습니다.
+    2. 하나의 정수를 인자로 받습니다.
+    3. 정수를 base_len 으로 1번 나눈 후 몫과 나머지를 구합니다.
+    4. base 의 “나머지” 번째 값을 결과에 추가합니다.
+    5. 몫이 0이 될 때 까지 반복합니다.
+    6. 결과를 문자열로 변환해 리턴합니다.
+
+
+# 디버깅의 중요성:
+
+만약 어느날 악마가 나타나 이 강의의 모든 내용중 “단 하나의 지식” 만 남길 수 있다고 말한다면 주저 없이 “디버깅”을 선택해야 합니다. 디버깅 능력은 그만큼 중요합니다.
+
+저는 디버깅을 못하는 사람중에 개발을 잘하는 사람은 거의 본적이 없고, 개발을 잘하는 사람중에 디버깅을 못하는 사람은 아예 본 적이 없습니다.
+
+다음은 “디버깅을 통해 배우는 리눅스 커널의 구조와 원리” 라는 책에 나오는 글입니다.
+
+> )91 페이지) 리눅스 개발자뿐만 아니라 다른 분야에 몸담고 있는 소프트웨어 개발자를 만나면 주로 이야기하는 주제가 디버깅입니다. 그중에서 게임계의 레전드 개발자이자 엔지니어인 김포프 님께서 언급하신 ‘디버깅에 대한 생각’을 공유합니다 (괄호 안의 내용은 발언 시점)
+>
+> - 프로그래머의 자질은 코딩을 해서 제품을 만들 수 있는 능력이다(1:15)
+> - 프로그래머가 갖춰야 할 가장 중요한 능력은 디버깅 스킬이다(2:45)
+> - 디버깅을 잘한다는 것은 남의 코드를 잘 읽고 그 코드 속의 로직을 따질 수 있고 그 로직을 단계별로 나눌 수 있는 것이다(3:22)
+> - 디버깅을 잘하면 남의 코드를 보는 것이 두렵지 않고 이 과정으로 배우는 것이 정말 많다(4:52)
+> - 디버깅을 잘하는 프로그래머를 보면 엄청나게 성장할 것이란 것을 안다(5:01)
+> - 정말 코딩을 잘하는 사람 중에 디버깅을 못하는 사람을 본 적이 없다. 디버깅을 잘하는 사람 중에 코딩을 못하는 사람을 본 적이 없다. 디버깅을 못하는 사람 중에 코딩을 잘하는 사람은 (거의) 본 적이 없다. 디버깅을 못하는 사람 중에 설계를 잘하는 사람은 (거의) 본 적이 없다(7:35)
+>
+> 소프트웨어 개발자로서 너무 공감이 되고 깊이 새겨야 할 명언인 것 같습니다.
+>
+
+### Deterministic
+
+Base62 연산은 “결정적” 입니다.(deterministic) 결정적이라는 말은 같은 입력을 하면 항상 같은 결과가 나온다는 뜻입니다.
+
+예를 들어…
+
+- 덧셈, 곱셈 등은 같은 인자를 넣으면 항상 같은 결과가 나오므로 결정적.
+- random 뽑기 같은 연산은 실행할 때마다 결과가 다르므로 결정적이 아님.
+
+입니다.
+
+### 정리
+
+- base62 를 사용해서 uuid4 를 “짧게” 만들 수 있습니다.
+- 중단점을 찍고 디버거를 사용하는 방법을 배웠습니다.
+    - step over 로 한 줄 앞으로 실행, resume 으로 다음 중단점까지 실행합니다.
+    - evaluate expression 을 사용하면 어떤 식도 실행하고 결과를 확인할 수 있습니다.
+- 같은 인자를 넣으면 항상 같은 결과가 나오는 특성을 “결정적” 이라고 합니다.
+
+# temp2.py
+
+# from typing import Final은 변경되지 않아야 할 "상수" 값을 선언할 때 사용하는 타입 힌트입니다.
+# 즉, "이 변수는 값을 바꾸지 않을 거야!"라고 코드 상에서 명확히 의도를 표현할 수 있게 해줍니다.
+
+# abc = "hihi"
+# abc = "hello"
+# print(abc)
+
+# mypy로 테스트시 재할당 되지 말아야할 값이 재할당 되서 오류남.
+# abc2: Final[str] = "hihi"
+# abc2 = "hello"
+# print(abc2)
+
+# 리스트는 재할당 되는 것이 아니라 내부 상태가 달라지는 것이라 괜찮음.
+# abc3: Final[list[str]] = ["a", "b"]
+# abc3.append("c")
+# print(abc3)
+
+
+# 파이참 디버그 모드 사용 팁
+
+# 디버그 하기
+# 디버그 모드 클릭
+
+# 디버깅할 라인에 좌측 줄번호 클릭하면 빨간색 원이 생김
+
+# Step Over (n)	함수 안으로 들어가지 않고 다음 줄로 이동
+# Step Into (s)	함수 안으로 들어감
+# Step Out (r)	지금 함수 빠져나와서 호출한 쪽으로 감
+
+# Evaluate expression
+# 커맨드 엔터 / 실행됨
+
+# ch20 [공통]sqids
+
+참조
+notion/part2/미팅 생성 API의 스펙 만들기/sqids 와 현재시각(micro second 까지)를 사용하는 방법
+
+# Sqids
+
+https://sqids.org/ko
+
+Sqids이란 무엇인가요?
+Sqids는 숫자로부터 짧은 고유 식별자(id)를 생성할 수 있는 오픈 소스 라이브러리입니다. 이 ID들은 URL에 안전하며 여러 숫자를 인코딩할 수 있으며 일반적인 욕설 단어를 포함하지 않습니다. 더 보기.
+
+## 기능
+음수가 아닌 숫자로부터 짧은 ID 생성
+쉬운 인코딩 및 디코딩
+자동 생성된 ID에는 일반적인 욕설이 포함되지 않음
+셔플된 알파벳을 통한 사용자 정의 ID 지원
+46 통합 (85% 는 새로운 디자인을 사용합니다)
+모든 버전은 동일한 ID를 생성함
+허용 라이선스를 가진 소규모 라이브러리
+
+설치
+poetry add sqids
+
+설치,버전 확인
+pip freeze | grep sqids
+
+# def encode(cls, nums: list[int]) -> str:
+# def encode(cls, nums: Sequence[int]) -> str:  # 시퀸스 자료형으로 하면 리스트, 튜플 둘 다 받아진다.
+
+# sqids가 base62에 비해 많이 느리지만 기능은 좀 더 있을 수 있음.
+# uuid.uuid4().int는 128비트 정수
+# 하지만 sqids.encode()는 64비트까지만 지원
+
+-------------------------------------------------
+Day4 EdgeDB와 MySQL로 배우는 실전 DB개발과 테스트 자동화
+-------------------------------------------------
+
+# ch32 Docker를 이용하여 MySQL서버 실행하기
+
+참조
+notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) 도커로 Mysql8 설치
+
+Mysql 설치
+- (mysql) 도커로 Mysql8 설치
+
+    도커로 mysql 8 을 설치하겠습니다.
+
+    이미  mysql 이 설치되어 있으신 분은 건너 뛰셔도 됩니다.
+
+    `lsof -i:3306`
+
+    `docker run --name mydb -e MYSQL_ROOT_PASSWORD=1234 -d -p 3306:3306 mysql:8`
+
+    - `-e MYSQL_ROOT_PASSWORD=1234` 환경변수로 root password 를 지정합니다.
+    - `-d` 백그라운드에서 실행되도록 합니다.
+    - `-p 3306:3306` docker container 의 3306 포트와 호스트 머신의 3306 포트를 연결합니다.
+
+    ## Pycharm 으로 데이터베이스에 연결
+
+    Docker desktop 혹은 orb stack 에서 데이터베이스가 켜진것을 확인했다면 pycharm 으로 연걸합니다.
+
+    `SELECT VERSION();`
+
+    후 major 가 8로 시작한다면 성공입니다!
+
+Mysql로 meeting 생성 구현하기
+poetry add "tortoise-orm[asyncmy]==0.23.0"
+poetry add cryptography==44.0.0
+poetry add aerich==0.8.1 tomlkit==0.13.2
+poetry add pydantic_settings==2.7.1
+
+https://tortoise.github.io/
+
+- tortoise-orm: django orm 이 async 를 (잘) 지원하지 않던 시절, 이를 대신하기 위해 탄생한 orm 입니다.
+- cryptography: 비밀번호 방식으로 mysql 에 로그인 할 떄 필요합니다.
+- aerich: tortoise-orm 의 migration tool 입니다. (sqlalchemy 에 alembic 이 있다면 tortoise 에는 aerich 가 있습니다.)
+- pydantic_settings: 서버 동작에 필요한 변수들을 환경변수에서 읽어주거나 dot env 에서 읽어줍니다. 원래 pydantic v1 에서는 pydantic 자체에 포함된 라이브러리 였는데, v2 가 되면서 빠져나왔습니다. pydantic 이기 때문에 역시 타입 관련 기능이 강력합니다. 환경변수를 적절한 “파이썬 타입” 으로 변환시켜줍니다.
+- tomlkit: (aerich 버그 때문에 설치합니다 😭) aerich 가 의존함에도 불구하고 의존성 그래프에 없기 때문에 수동으로 설차힙니다.
+
+ORM은 Object-Relational Mapping의 약자로,
+객체 지향 프로그래밍 언어에서 데이터베이스를 다룰 때 사용하는 기술
+
+기쁜 소식: tortoise-orm 은 사용 방법이 django orm 과 90% 흡사합니다.
+
+- 모델 선언방식
+- QuerySet 을 사용해서 쿼리하는 점
+- Orm 을 위한 테스트 프레임워크를 제공하는 점
+이 거의 똑같습니다!
+
+pydantic의 기능
+현재 폴더를 기준으로 .env가 있으면 읽고 없으면 기본값을 불러옴.
+.env에 ENV="invalid" 이렇게 변수가 선언되어 있는데.
+config에 미리 정의한 enum env의 값으로 'local', 'stage', 'prod' 이렇게 정해져있기 때문에
+ENV 값이 invalid이렇게 되어 있으면 에러가 난다.
+
+
+# main하고 자동완성 기능을 사용하면 만들어줌.
+# 파이참의 라이브 템플릿 기능
+
+# 파일메뉴 클릭 런 으로 해당 파일을 실행
+# 혹은 컨트롤 시프트 r로 해당 파일을 실행
+
+# 커맨드 시프트 n  스크래치 파일 생성
+
+# Swagger UI   http://localhost:8000/docs    대화형 API 문서 (기본 제공)
+# ReDoc        http://localhost:8000/redoc   깔끔한 스타일의 API 문서
+
+
+--------------
+Replication
+--------------
+
+Replication 전략은
+주로 데이터베이스 시스템에서 데이터의 복제 방식을 정하는 전략을 말합니다.
+데이터의 가용성, 안정성, 확장성을 높이기 위해서 여러 서버에 동일한 데이터를 복제하는 방식.
+
+쓰기, 수정, 삭제 작업 용도의 DB를 하나 쓰고 (writeDB)
+읽기 전용 DB를 쓴다.  (read replica DB)
+
+보통 읽기 작업이 많기 때문에 이런 전략을 사용하기도 한다.
+
+- `connect_timeout: 5` 데이터베이스와 연결을 시도한 뒤,
+5초 이내에 데이터베이스가 응답하지 않을 경우 기다리는 것을 멈춘 후 timeout error 를 일으킵니다.
+
+- `maxsize: 30` 데이터베이스와 연결을 맺는일은 시간적 비용이 많이 드는 작업입니다.
+어짜피 데이터베이스와는 자주 소통하기 때문에 매 번 연결을 새로 맺는 것이 아니라 기존에 맺어두었던 연결을 재활용 함으로써 효율적으로 통신합니다.
+이를 “커넥션 풀” 이라고 하며, `maxsize` 는 커넥션 풀이 최대로 가지고 있을 수 있는 connection 의 수 입니다.
+
+커넥션 풀(Connection Pool)은
+데이터베이스 연결을 효율적으로 관리하기 위한 기술.
+DB와의 연결(Connection)은 만드는 데 비용이 크고 느리기 때문에,
+DB 연결을 미리 만들어 풀(pool)에 보관하고, 필요할 때 꺼내 쓰는 방식.
+
+보통 gunicorn 은 “멀티 프로세스”를 사용합니다.
+각 worker 가 별도의 프로세스입니다.
+별도의 프로세스인 worker 들은 커넥션 풀을 공유하지 않고 저마다 각자의 커넥션 풀을 가지고 있습니다.
+따라서 데이터베이스에 최대로 맺어질 수 있는 커넥션의 수는 = 커넥션 풀의 max size * worker 의 수 입니다.
+
+connection 의 개수가 많을 수록 트래픽이 갑작스럽게 쏟아질때 더 유연하게 대처가 가능합니다만,
+반대로 데이터베이스가 커넥션을 유지하기 위해 사용하는 메모리도 많아진다는 점 유념해 둡시다.
+
+
+# MySQL : primary key를 정할 때 주의해야 되는 점
+# MySQL version 8 이상 부터라면 (5.7 부터도 쓰긴함)
+# innodb가 default engine (옛날 MyISAM)
+
+# innodb의 특징 중 하나 ->  clustering index
+# primary key를 기준으로
+# primary key값이 비슷한 row들끼리 disk에서도 실제로 모여있음.
+
+# HDD
+# 랜덤 IO가 느리고, 순차 IO가 빠르다.
+
+# SSD
+# 순차 IO가 좀 더 빠르지만 랜덤 IO도 빠름.
+
+# 그냥 int가 아니라, 비즈니스 작 의미가 있고
+# 계속해서 증가하는 어떤 갑으로 설정하면
+# 굉장히 빠르게 읽을 수 있습니다.
+
+# int의 최대값 21억이지만 이걸 넘어서 사용하게 될 수도 있어서 bigint사용
+
+# Text : 길이가 길다. 인덱스 안됨.
+# Varchar : 길이 제한, 인덱스 가능.
+# mysql의 varcher는 255이하는 사용되는 크기가 같다.
+
+마이그레이션하기 위해 초기화
+aerich init -t app.configs.tortoise_config.TORTOISE_ORM
+
+초기화 후 pyproject.toml에 설정이 생김.
+
+db초기화
+aerich init-db
+안될시 db설정 확인.
+
+migrations.models폴더에 마이그레이션 파일이 생김.
+쿼리가 저장되어 있음.
+
+
+Alembic
+ORM을 바꾸려고 할 때 대공사를 하게 될 수도 있음.
+
+Aerich
+DB를 바꿀때 쿼리문을 수정해야함.
+
+마이그레이트
+aerich migrate
+
+Database확인
+새로고침 후 -> meeting -> modify table
+필드 제대로 만들어졌나 확인
+
+
+# ch33 Tortoise-orm 설치 및 모델 생성
+
+참조
+notion/part2/Mysql 로 meeting 생성 구현하기/tortoise-orm, cryptography, aerich 설치. 모델 생성
+
+https://tortoise.github.io/contrib/unittest.html?h=conftest.py#py-test
+
+initializer - 데이터베이스 생성과 연결 수립
+finalizer - 남아있는 연결을 전부 종료(커넥션 종료)
+
+- `initialize()`
+pytest fixture 로, scope 가 session 이기 때문에 테스트 시작과 함께 생성되고,
+모든 테스트가 종료된 이후에 yield 이후가 실행됩니다. tortoise 를 준비시키는 역할과,
+테스트 종료후 남은 connection 을 정리하는 역할을 합니다.
+
+- `event_loop()` 나쁜 짓(?) 이긴 하지만 의도적으로 pytest-asyncio 의 event loop 생성을 차단합니다.
+이는 tortoise-orm 과 겹치지 않도록 하기 위함입니다.
+
+pytest는 프로젝트 취상단에 있는 conftest.py 자동으로 읽음
+
+**Mocking(모킹)**은
+테스트에서 자주 사용되는 개념으로,
+어떤 객체나 함수의 실제 동작을 흉내 내는 가짜(mock) 객체를 만드는 것
+
+# ch34 aerich를 활용한 Metting Model 마이그레이션
+
+Day5 EdgeDB와 MySQL로 구현하는 조건 기반 미팅 기능
