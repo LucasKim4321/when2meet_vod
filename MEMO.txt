@@ -392,3 +392,5 @@ pytest는 프로젝트 취상단에 있는 conftest.py 자동으로 읽음
 # ch34 aerich를 활용한 Metting Model 마이그레이션
 
 Day5 EdgeDB와 MySQL로 구현하는 조건 기반 미팅 기능
+
+test
