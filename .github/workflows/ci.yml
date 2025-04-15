@@ -115,12 +115,29 @@ jobs:
 #          poetry run coverage report -m
 
       # 테스트 파일이 있는 경우에만 실행
-      - name: Run tests only if test files exist
+#      - name: Run tests only if test files exist
+#        run: |
+#          if find . -type f -name 'test_*.py' | grep -q .; then
+#            echo "✅ Test files found. Running pytest..."
+#            poetry run coverage run -m pytest .
+#            poetry run coverage report -m
+#          else
+#            echo "⚠️ No test files found. Skipping tests."
+#          fi
+
+
+      # 실제로 테스트 할 수 있는 코드가 있는지 판별 후 테스트 수행
+      - name: Run tests only if tests actually exist
         run: |
-          if find . -type f -name 'test_*.py' | grep -q .; then
-            echo "✅ Test files found. Running pytest..."
+          set -e  # 에러 발생 시 종료
+
+          echo "🔍 Checking if pytest can collect any tests..."
+          TEST_COUNT=$(poetry run pytest --collect-only -q | grep -c '::')
+
+          if [ "$TEST_COUNT" -gt 0 ]; then
+            echo "✅ Found $TEST_COUNT tests. Running pytest..."
             poetry run coverage run -m pytest .
             poetry run coverage report -m
           else
-            echo "⚠️ No test files found. Skipping tests."
+            echo "⚠️ No runnable tests found. Skipping pytest."
           fi
