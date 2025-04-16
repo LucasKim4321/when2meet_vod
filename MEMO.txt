@@ -1550,13 +1550,14 @@ notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) ci 에 mysql 추가
       MYSQL_PASSWORD: 1234
       MYSQL_DATABASE: when2meet_vod
 
-			# 추가!
+
+      # /etc/localtime 파일은 현재 시스템의 시간대 정보를 담고 있는 심볼릭 링크. 이 파일을 삭제해서 시간대 설정을 초기화하려는 의도
+      # sudo ln -s 새롭게 한국 시간대(KST) 에 맞는 타임존 파일을 /etc/localtime에 심볼릭 링크로 연결
       - name: Set timezone to KST
-        run: |
+        run: |  # | 뒤에 오는 줄들은 모두 한 덩어리의 스크립트로 실행됩니다 (여러 줄 가능)
           sudo rm /etc/localtime
           sudo ln -s /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 
-      # 추가!
       # 깃허브에는 mysql이 이미 설치 되어 있어서 실행만 하면됨.
       - name: Start Mysql
         run: |  # | (파이프라인) 은 yaml 문법인데, value 를 multi-line 으로 쓰고 싶을때 사용합니다.
@@ -1564,14 +1565,93 @@ notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) ci 에 mysql 추가
           mysql -e "use mysql; FLUSH PRIVILEGES; ALTER USER '${{ env.MYSQL_USER }}'@'localhost' IDENTIFIED BY '${{ env.MYSQL_PASSWORD }}';" -uroot -proot
           mysql -e 'CREATE DATABASE ${{ env.MYSQL_DATABASE }};' -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }}
 
-      - name: Run tests
-        run: |
-          poetry run coverage run -m pytest .
-          poetry run coverage report -m
+      #mysql -e
+      #→ MySQL 커맨드라인 클라이언트를 실행하며 -e 옵션은 즉석에서 쿼리를 실행합니다.
+      #
+      #"use mysql; ..."
+      #→ 먼저 시스템 DB인 mysql을 사용한 후, 권한 갱신 및 사용자 비밀번호를 변경합니다.
+      #
+      #FLUSH PRIVILEGES;
+      #→ 권한 변경 사항을 MySQL에 즉시 반영합니다.
+      #
+      #ALTER USER ... IDENTIFIED BY ...
+      #→ 환경 변수 ${{ env.MYSQL_USER }} 와 ${{ env.MYSQL_PASSWORD }}를 사용해
+      #해당 사용자에 대해 비밀번호를 재설정합니다.
+      #(CI 환경에선 초기 사용자 세팅이 필요하기 때문에 이 설정이 중요합니다)
+      #
+      #-uroot -proot
+      #→ MySQL의 root 계정으로 로그인합니다. 비밀번호는 root.
+
 
 
 -------------------------------------------------
 Day5 EdgeDB와 MySQL로 구현하는 조건 기반 미팅 기능
 -------------------------------------------------
 
-test
+ch38 meeting 조회의 요구사항
+
+참조
+notion/part2/meeting 조회 구현하기/meeting 조회의 요구사항
+
+meetifyr 은 여러명이 동시에 같은 meeting 을 수정할 수 있습니다.
+
+- 현재 meetifyr 에서는 동시에 2개의 창을 띄워서 수정을 하면 A 창에서 만든 수정사항이 B 창에서 보이지 않습니다.
+- 이는 잠재적인 버그를 만들 수 있습니다.
+- 한 사용자의 변경사항을 다른 사용자에게 실시간으로 전파하기 위해서는 websocket, long polling 과 같은 기술이 별도로 필요합니다. (http 만으로는 가능은 하지만 비효율적)
+- 각 변경 요청의 응답으로 “가장 최신의 meeting” 을 응답하는 방식으로 완벽하게는 아니지만 대응이 가능합니다.
+
+
+B ->> Meetifyr: 처음으로 Meetifyr 사이트에 진입. 미팅 조회
+Meetifyr -->> B: 최신의 Meeting 상태 응답
+
+A ->> Meetifyr: 자신의 일정을 변경
+Meetifyr -->> A: 가장 최신의 meeting 상태를 응답
+
+B ->> Meetifyr: 자신의 일정을 변경
+Meetifyr -->> B: 직전의 A의 변경사항을 포함해 가장 최신의 Meeting 을 응답
+
+따라서…
+- 매 번 처음 페이지를 열 때마다 호출 될 “미팅 조회 API 를 생성”
+- 이 후 변경 API 가 호출될 때 마다 변경 직후에 미팅 조회 service 를 호출해 가장 최신의 meeting 을 반환하도록 하겠습니다.
+
+
+ch39 meeting 조회의 요구사항
+
+참조
+notion/part2/meeting 조회 구현하기/dmypy (mypy daemon) 사용하기
+
+지금까지 로컬에서 개발할때 `mypy` 명령을 그대로 사용했습니다.
+이는 매 번 mypy를 실행할 때 마다 mypy 프로세스를 새로 켜고, 검사가 끝나면 프로세스를 종료해야 하는데, 비효율적입니다.
+어짜피 자주 검사한다면 프로세스를 띄워두고 검사가 필요할때마다 요청하면 매 번 프로세스를 껐다 켜는 오버헤드를 줄일 수 있습니다.
+이를 위해 mypy 는 daemon 모드를 지원합니다.
+
+https://mypy.readthedocs.io/en/stable/mypy_daemon.html
+
+Mypy daemon (mypy server)
+
+mypy를 커맨드라인 도구로 실행하는 대신, 서버(데몬) 프로세스로 실행할 수도 있습니다.
+그런 다음 커맨드라인 클라이언트를 통해 타입 체크 요청을 서버로 전송할 수 있습니다.
+이 방식은 mypy가 이전 실행 결과를 메모리에 유지하므로,
+매번 파일 시스템에서 다시 읽을 필요 없이 훨씬 빠르게 타입 체크를 할 수 있습니다.
+
+또한 서버는 더 정밀한 의존성 추적을 사용하여,
+변경된 부분만 검사하는 등, 전체 분석 작업량을 줄입니다.
+
+만약 코드베이스가 크고, 자주 mypy를 돌린다면,
+이 데몬 방식은 기존보다 10배 이상 빠를 수 있습니다.
+특히 코드 수정 후 자주 타입 검사를 하는 워크플로우에서 매우 효과적입니다.
+이렇게 하면 오류를 더 빨리 발견할 수 있기 때문입니다.
+
+📝 요약
+mypy를 데몬 서버(dmypy)로 실행하면, 이전 실행 결과를 메모리에 저장해두고 변경된 부분만 빠르게 검사할 수 있어,
+반복 실행 시 속도가 기존보다 10배 이상 빨라집니다. 특히 대규모 프로젝트나 자주 타입 검사를 수행하는 워크플로우에 효과적입니다.
+
+test.sh 수정
+
+echo "Starting mypy"
+poetry run dmypy run -- .
+echo "OK"
+
+테스트 실행하면 .dmypy.json 생기는데
+.gitignore에 추가
+.dmypy.json
