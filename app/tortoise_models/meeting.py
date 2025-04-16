@@ -20,3 +20,4 @@ class MeetingModel(BaseModel, Model):
 # Text : 길이가 길다. 인덱스 안됨.
 # Varchar : 길이 제한, 인덱스 가능.
 # mysql의 varcher는 255이하는 사용되는 크기가 같다.
+# ch33 Tortoise-orm 설치 및 모델 생성

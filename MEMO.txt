@@ -1,10 +1,887 @@
 
+-------------------------------------------------
+Day1 FastAPI 시작을 위한 개발 환경 구축
+-------------------------------------------------
+
+
+다음 웹사이트를 참고하여 개발하는걸 목표로 한다.
+
+http://www.meetifyr.com/
+
+meetifyr
+
+그룹의 약속 일정을 쉽게 잡을 수 있게 도와주는 웹사이트
+
+http://www.meetifyr.com/8EiNHBuw6X
+
+
+--------
+Poetry
+--------
+
+    주의사항
+
+        anaconda 가 설치되어있다면 삭제하거나, anaconda 를 아예 끄고 (anaconda 가상환경이 켜져 있으면 안 됩니다.) poetry 설치합니다.
+
+        pyenv 도 마찬가지로, pyenv 를 비활성화 혹은 삭제하고 poetry 를 설치합니다.
+
+        brew 로 poetry 설치하지 않았으면 좋겠습니다. (official installer 로 설치할 때랑 default 설정값이 달라집니다.)
+
+        pyenv가 활성화 되어있을 시 파이참에서 FastAPI와 poetry를 사용한 프로젝트가 제대로 생성되지 않음.
+        vim ~/.zshrc로 zsh설정을 열어서 pyenv가 적용되지 않게 pyenv관련 설정을 모두 주석처리하니까 됨.
+
+    poetry 홈페이지
+
+        https://python-poetry.org/
+
+        - 매 번 pip freeze 할 필요 없이, 알아서 poetry.lock 으로 종속성을 관리해 줍니다.
+
+        - PEP 518 표준인 pyproject.toml 로 프로젝트를 관리하는 것을 도와줍니다.
+
+        - PEP: Python Enhancement Proposal → python comunity 가 PEP 라는 문서를 사용해서, "앞으로 python 을 어떻게 개선할지" 논의합니다.
+
+        - https://www.python.org/dev/peps/pep-0518/
+
+        - black, isort, mypy, ruff, coverage, pytest 설정을 pyproject.toml 한 곳에 모읍니다.
+
+        - 모든 종속성 예) fastapi 의 버전을 관리합니다.
+
+        - pip 와 달리 종속성을 group 에 따라 나눌 수 있습니다.
+            ▪ 개발시에만 필요한 종속성: black, pytest
+            ▪ 실제 배포시에 필요한 종속성: fastapi
+        -  build.gradle 이랑 비슷?
+
+    pip 보다 좀 더 똑똑한 dependency resolving (https://github.com/python-poetry/poetry/poetry#why)
+
+
+    poetry 설치
+
+        python --version 으로 버전확인 (3.13)
+        poetry 설치 (https://python-poetry.org/docs/)
+
+        코드스니펫(Code Snippet) poetry 설치 (mac 용)
+        curl -sSL https://install.python-poetry.org | python3 --version 1.8.5
+
+        코드스니펫(Code Snippet) poetry 설치 (windows 용)
+        (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+
+
+--------------
+파이썬 (python)
+--------------
+
+파이썬 설치
+버전 선택
+macOS 64-bit universal2 installer 설치
+설치 후 나오는 폴더에서 install Certificates.command  클릭해서 인증서 설치
+
+
+정석대로 설치하면 문제 생길 확률이 줄어듬.
+브루로 설치시 문제 생길 수 있음.
+파이썬, pyenv, poetry 같은 것은 브루를 사용하지 않고 정석대로 설치하길 권장.
+
+pyenv가 활성화 되어있을 시 파이참에서 FastAPI 프로젝트가 제대로 생성되지 않음.
+vim ~/.zshrc로 zsh설정을 열어서 pyenv가 적용되지 않게 pyenv관련 설정을 모두 주석처리하니까 됨.
+
+
+--------------
+oh my zsh
+--------------
+
+zsh - Z Shell의 약자로 기존의 bash, ksh, tcsh의 많은 유용한 기능을 통합한 유닉스 쉘이다.
+사용자를 위한 다양한 편의기능을 제공하기 때문에 설치해두면 편리하다.
+맥은 기본적으로 zsh
+
+zsh의 장점인 다양한 테마를 사용하기 위해 아래 명령어로 oh-my-zsh을 설치해주자.
+
+oh my zsh 설치 추천
+
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+
+--------
+# Black
+--------
+
+    black이란?
+    "The uncompromising Python code formatter"
+    (타협 없는, 엄격한 Python 코드 포매터)
+
+    🔧 무슨 역할을 하나요?
+    Python 코드를 자동으로 정해진 스타일대로 정리해줍니다.
+
+    개발자가 코드 스타일로 고민하지 않도록 강력한 규칙을 적용합니다.
+
+    사람마다 스타일이 다른 걸 방지 → 팀 프로젝트에 특히 유리
+
+    블랙(black) 설치
+    poetry add --group=dev black
+    poetry add --group=dev black==24.10.0
+
+    블랙 실행
+    black .  또는  poetry run black .
+    현재 폴더에 블랙을 적용
+
+--------
+# Ruff
+--------
+
+  ruff는 최근 많은 Python 개발자들이 flake8, pylint, black 등의 대체 또는 보완재로 사용하고 있는
+   **빠르고 강력한 Python 정적 분석기(linter + formatter)**입니다.
+
+  설치
+    poetry add --group=dev ruff
+    poetry add --group=dev ruff==0.8.2
+
+  # ruff의 주요 기능
+
+  기능               설명
+  Linter            코드에 잘못된 스타일, 오류 가능성 등을 알려줍니다 (flake8처럼)
+  Formatter         black처럼 코드를 자동으로 예쁘게 정리해줍니다 (옵션)
+  Import 정리        isort처럼 import 순서를 자동 정리합니다
+  타입 검사 일부       mypy 기능의 일부분도 지원 (초기 버전에서 점점 확장 중)
+  매우 빠름           Python 도구들보다 훨씬 빠릅니다. 몇 천 파일도 순식간에 처리
+
+
+  터미널에 문제점이 있는지 확인
+  ruff check
+
+  문제점을 자동으로 수정
+  ruff check --fix
+
+
+# 예제 st01.py
+
+# 이 특정 라인에 대해서 lint를 하고싶지 않을 때 주석 noqa사용
+# noqa 사용되지 않는 import일지라도 import 하고 싶을 때 사용
+# import temp2 # noqa  # isort 옵션 사용할 때 이것 때문에 무시 될 수 있음.
+
+# 일부러 알파벳순
+import os
+import sys
+
+# 코드가 옆으로 길면 black 실행 시 이렇게 바꿔줌
+print(
+    "Lif is Tooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo Short!!"
+)
+
+# ruff가 권한하지 않는 변수명
+# O = "abc"
+
+
+# black .
+# poetry run black .
+
+
+
+# 기본 그룹(select = ["E4", "E7", "E9", "F"]) 검사
+# ruff check
+# ruff check --fix
+
+# 오직 I 그룹(import 관련) 문제만 검사
+# ruff check --select I
+# ruff check --select I --fix
+
+
+# poetry
+# pyproject.toml 설정
+#
+# [tool.black]
+# line-length = 120  # hard wrap length 120
+#
+# [tool.ruff]
+# target-version = "py313"  # 파이썬 버전 3.13
+
+# ## 반드시 지켜야 하는 습관
+#  - commit 하기 전에 자기가 무엇을 커밋하는지 꼭 확인하기!
+#  - 미쳐 삭제하지 않은 print()가 없는지 꼭 확인하기
+#   - print()는 "비싼 연산" 입니다.
+
+# print()는 터미널에 입출력(Input Output)해야하기 때문에 오래걸림.
+
+
+oy my zsh 추천
+ Zsh 셸을 더 강력하고 편리하게 만들어주는 커스터마이징 프레임워크
+ bash보다 더 강력한 zsh 셸을 기반으로 함
+ 테마, 자동완성, 플러그인, git 상태 표시 등 다양한 기능 제공
+ macOS 기본 셸이 zsh로 바뀌면서 더 널리 사용됨
+
+----------
+# Mypy
+----------
+
+정적 타입 검사(static type checking)**를 할 수 있도록 도와주는 도구
+
+Mypy 설치
+ poetry add --group=dev mypy
+ poetry add --group=dev mypy==1.13.0
+
+ mypy로 검사
+ mypy .
+
+ 타입힌트가 없을 땐 다이나믹 상태로 인식해 검사를 하지 않음.
+ 타입힌트가 있을 땐 스테틱 상태로 인식해 검사를 한다.
+
+ 커맨드 시프트 n 누르고 pyt눌러서 python 선택하면 scratch.py 파일이 만들어짐.
+
+
+# 예제 st03.py
+
+# static 실행하기 전에 결정.
+a = "123"
+print(a)  # 123
+
+# dynamic
+b = input()
+print(b) # 예상 불가
+
+mypy는 "실행 전에" 알 수 있는 것들에 대해서만 검사
+mypy는 python 프로그램을 실행하지 않는다.
+
+
+print("12345")
+a = 123
+
+# reveal_type(a) # mypy로 검사 수행시 타입을 알려줌. mypy만 사용하는 함수. 파이썬으로 실행하면 오류걸림.
+
+my_int: int = 123  # 타입 힌트로 int를 줬는데 str을 입력 받으면 mypy 검사시 오류남.
+
+
+# 추론(inference)
+my_int2 = 123  # Literal : 값  mypy는 리터럴로부터 타입을 추론함.
+
+
+my_list: list[str] = ["a", "b", "c"]
+
+# 불변성 (immutable)
+# 튜플 타입에 타입 힌트를 주려면 길이만큼 타입을 지정
+my_tuple: tuple[str,str,str] = ("a", "b", "c")
+
+# 길이를 모르는 경우에 어떻게 할 까?
+my_tuple2: tuple[str, ...] = ("a", "b", "c")
+
+my_dict: dict[str, int] = {"a": 1, "b": 2, "c": 3}
+
+# str이나 int타입 설정.
+# bool도 통과된다. 파이썬의 bool이 int를 상속받았기 때문에 가능.
+or_type_list: list[str|int] = ["a", 1, "c", 3, False]
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+1 + add(1,1)
+
+
+
+-------------------------------------------------
+Day2 백엔드 개발자를 위한 테스트 환경 구축
+-------------------------------------------------
+
+# Pytest
+
+  - pytest는 파이썬에서 테스트 코드를 쉽게 작성하고 실행할 수 있게 도와주는 테스트 프레임워크
+
+  ## pytest 설치
+
+    poetry add --group=dev pytest
+    poetry add --group=dev pytest===8.3.4
+
+
+# pytest 사용시
+# 함수 이름 앞에 test_라고 써주면 test 함수인걸 인식한다.
+
+# 파이참에서 pytest 함수를 만들면 테스트 실행버튼이 생긴다.
+# 터미널에서 테스트 실행 시 pytest . 이렇게 입력하면 됨.
+def test_simple() -> None:
+    print("Testing simple")
+
+
+실행하는 방법은 다음과 같습니다. (둘 중 하나를 선택하시면 됩니다.)
+  - 함수 왼쪽의 초록색 삼각형을 누른 후, run 을 선택합니다.
+  - 터미널에서 pytest . 을 실행합니다.
+
+단위테스트는 우리가 작성한 코드가 “예상한 대로 동작하는지” 검증합니다.
+단위 테스트를 실행하는 도중에 한 번도 예상하지 못한 에러가 발생하지 않았다면 테스트는 “성공”으로 간주되고, 반대로 예상치 못한 에러가 발생했다면 테스트는 실패로 간주됩니다.
+위 test_simple() 은 아무것도 검증하지 않지만, 실행 과정 도중에 에러가 발생하지 않고 끝까지 실행되기 때문에 성공한 테스트로 간주됩니다.
+
+실제 테스트에서 무엇이든 검증하고자 할 때에는 assert 를 사용하면 됩니다.
+단순 print 대신 조금 더 복잡한 예시를 들어보겠습니다.
+
+▶ test_simple.py
+  - 두 정수를 더하는 함수 add(a: int, b: int) -> None 을 정의했습니다.
+  - test 함수에 3가지 step 이 추가되었습니다.
+
+# test_st05_simple.py
+
+# pytest 사용시
+# 함수 이름 앞에 test_라고 써주면 test 함수인걸 인식한다.
+
+# 파이참에서 pytest 함수를 만들면 테스트 실행버튼이 생긴다.
+# 터미널에서 테스트 실행 시 pytest . 이렇게 입력하면 됨.
+def test_simple() -> None:
+    print("Testing simple")
+
+    # 0으로 무언갈 나눌 수 없기 때문에 ZeroDivisionError 오류가 난다.
+    # print(1/0)
+
+    # 에러 발생을 예상했고 거기에 따른 예외 처리도 했기 때문에 무사히 넘어갈 수 있다.
+    try:
+        1/0
+    except ZeroDivisionError:
+        print("Division by zero")
+
+# 제품 코드
+def add(a: int, b: int) -> int:
+    return a + b
+
+# 테스트 코드
+def test_add() -> None:
+    # Given : 재료를 준비합니다.
+    # 버그는 "경계"를 좋아합니다.
+    # int의 경우에는 -1, 0, 1
+    a, b = 1, 2
+
+    # When : 테스트 대상이 되는 함수를 호출합니다.
+    result = add(a, b) # result의 타입은 int
+
+    # Then :
+    assert result == 3
+
+
+
+# assert 1+1 == 3  # 에러
+# assert 1+1 == 3, "계산이 틀렸습니다"  # 에러 감지시 에러문 표시
+
+
+st_06 test_delivery.py
+
+from datetime import datetime, timedelta
+
+# literal을 쓰지 않고 상수를 쓰는 이유
+# 2라는 숫자에 "배송일"이라고 표기하기 위해
+# (미래의 동료, 미래의 나)에게 알려주는 역할
+# magic number를 쓰지 말자
+DELIVERY_DAYS = 2
+
+# 매직 넘버(Magic number)는
+# 코드에서 하드 코딩된(literal value) 일정한 값을 의미하는 숫자나 문자열 등을 의미합니다.
+# 매직넘버는 코드 내에서 여러 곳에서 사용되지만 이 값의 의미나 목적은 코드에서 명확하게 알려지지 않습니다.
+# 매직 넘버는 가독성이 떨어지고 유지보수가 어렵게 만들며, 예상치 못한 버그를 발생시키는 원인이 될 수 있습니다.
+# 따라서 매직 넘버 대신에 상수나 변수를 사용하는 것이 좋습니다.
+# 변수나 상수를 사용하면 값을 변경할 때 일괄적으로 변경할 수 있으므로 코드의 유지보수성과 가독성이 향상됩니다.
+
+# 제품 코드
+def _is_holiday(day: datetime) -> bool:
+    "Return day of the week, where Monday == 0 ... Sunday == 6."
+    return day.weekday() == 6  # 일요일이면 True
+
+def get_eta(purchase_date: datetime) -> datetime:
+    current_date = purchase_date
+    remaining_days = DELIVERY_DAYS
+
+    while remaining_days > 0:
+        current_date += timedelta(days=1)
+        if not _is_holiday(current_date):
+            remaining_days -= 1
+
+    return current_date
+
+# 테스트 코드
+def test_get_eta_2023_12_01() -> None:
+    # Given : 재료를 준비합니다.
+    order_date = datetime(2023,12,1)
+
+    # When : 테스트 대상이 되는 함수를 호출합니다.
+    result = get_eta(order_date)
+
+    # Then : 결과
+    assert result == datetime(2023,12,4)
+
+def test_get_eta_2024_12_31() -> None:
+    """
+    실전에서는 공휴일 API를 호출해서 공휴일까지 계산
+    공휴일 정보가 없어서 1월 1일도 평일로 취급
+    """
+
+    result = get_eta(datetime(2024,12,31))
+    assert result == datetime(2025, 1, 2)
+
+def test_get_eta_2024_02_28() -> None:
+    result = get_eta(datetime(2024, 2, 28))
+    assert result == datetime(2024, 3, 1)
+
+def test_get_eta_2023_02_28() -> None:
+    result = get_eta(datetime(2023, 2, 28))
+    assert result == datetime(2023, 3, 2)
+
+# Xunit 계열 테스트와 단위테스트의 역사
+# 우리가 배운 단위 테스트를 Xunit 계열 테스트 라고도 부릅니다.
+# 단위테스트의 시초는 켄트백(Kent Beck)이 처음 Small Talk 에서 작성한 SUnit 으로 알려져 있습니다.
+# 이후 켄트백 본인이 Eric Gamma 라는 개발자와 함께 Java 에도 단위테스트 프레임워크인 Junit 을 만들었고 Junit 은 대성공했습니다.
+# 그 이후 비슷한 프레임워크들이 ?Unit 이라는 이름으로 수많은 다른 언어에 (파이썬에는 내장 라이브러리인 unit test 와 pytest 가 있습니다) 퍼져나가게 됩니다.
+
+
+-------------
+Coverage
+-------------
+
+Coverage(커버리지)는
+소프트웨어 테스트에서 테스트가 코드의 어느 부분까지 실행했는지를 측정하는 지표입니다.
+즉, **"내가 작성한 테스트가 실제 코드 중 얼마나 많은 부분을 검사하고 있는가?"**를 수치로 보여줍니다.
+
+  쉽게 말하면 전체 코드가 100줄인데, 테스트를 돌려봤더니 70줄만 실행됐다면
+  → 커버리지는 70%입니다.
+
+Coverage 설치
+poetry add --group=dev coverage
+poetry add --group=dev coverage==7.6.9
+
+coverage, 왜 필요한가?
+
+저는 coverage 측정이 없는 단위테스트는 반쪽짜리 단위테스트라고 생각합니다.
+지금부터 coverage가 무엇인지, 왜 사용해야 하며, 어떻게 사용해야 하는지 예제와 함께 알아보겠습니다.
+
+▶ temp.py
+
+커버리지의 정의는 다음과 같습니다.
+
+  (테스트 도중 한 번이라도 실행된 제품 코드) ÷ (전체 제품 코드)
+
+(좀 더 깊게 들어가면 구문 커버리지, 분기 커버리지 등 커버리지도 종류가 많은데요, 지금은 생각하지 않도록 합시다.)
+
+그렇다면 위 temp.py 를 pytest로 실행했을 때 실행되는 코드와 실행이 안되는 코드는 각각 무엇일까요?
+코드 라인 넘버로 대답해 봅시다.
+
+직접 실행하기 전에 각각 답을 내었다면, 이제 실행해 봅시다.
+
+다음 명령어를 실행하면 커버리지를 측정하면서 테스트를 수행합니다.
+
+
+# 예제 st07_coverage.py.py, test_st07_coverage.py
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+def mul(a: int, b: int) -> int:
+    return a * b
+
+def test_add() -> None:
+    # Given
+    a, b =  1, 1
+
+    # When
+    result = add(a,b)
+
+    # Then
+    assert result == 2
+
+(테스트 도중 한 번이라도 실행된 제품 코드) / (전체 제품 코드)
+
+coverage 설치
+poetry add --group=dev coverage
+
+pytest를 사용해 coverage를 실행
+poetry run coverage run -m pytest st07_coverage.py.py
+
+보고서 작성
+-m, --show-missing
+Show line numbers of statements in each module that weren't executed.
+poetry run coverage report -m
+
+
+결과 : 총 8줄 중에 5번 줄 한줄이 실행 되지 않았음을 의미
+test 코드도 포함되서 계산됨.
+Name           Stmts   Miss  Cover   Missing
+--------------------------------------------
+st07_coverage.py.py       8      1    88%   5
+--------------------------------------------
+TOTAL              8      1    88%
+
+test 코드는 포함 되지 않게 설정
+*/test_*.py 어느 경로든 'test_.py'라는 이름이 앞에 포함되면 제외
+[tool.coverage.run]
+omit = ["*/test_*.py"]
+
+테스트 코드를 블록 설정한 다음에 -> 우클릭 refactor -> move 하면
+코드만 따로 때서 파일을 하나 만듬.
+
+때어낸 파이썬 코드를 테스트
+poetry run coverage run -m pytest test_st07_coverage.py
+
+확인해보면 테스트 코드가 제외되고 실행됨
+poetry run coverage report -m
+
+ 3/4 75%
+커버리지가 75%로 감소했지만 이게 정상.
+커버리지는 높을 수록 좋음.
+Name           Stmts   Miss  Cover   Missing
+--------------------------------------------
+st07_coverage.py.py       4      1    75%   5
+--------------------------------------------
+TOTAL              4      1    75%
+
+poetry run coverage html
+htmlcov 폴더가 생김
+index.html을 열어보면 결과가 웹페이지에 보기좋게 표시됨.
+
+## 정리
+
+  - 단위 테스트를 전부 실행해도 한 번도 실행되지 않은 코드는 곧 테스트를 안한 코드다.
+  - 테스트 안 된 지점에서 버그가 나면 할 말이 없다. (테스트 안 한 개발자의 잘못)
+  - 따라서 커버리지 계산을 통해 “지금 내가 수정한 코드가 제대로 테스트 되고 있는가” 를 판단할 필요가 있다.
+  - 커버리지의 정의는 (테스트 도중 한번이라도 실행된 제품코드) ÷ (전체제품코드) 이다.
+  - 커버리지를 계산할 때 테스트 코드는 omit 하고, 제품 코드만 계산에 들어가도록 해야 한다.
+
+  - 커버리지 실행을 하려면
+    - poetry run coverage run -m pytest .
+    - poetry run coverage report -m
+    - poetry run coverage html
+  을 하면 됩니다.
+
+
+----------------
+Dev dependency
+----------------
+
+▶ dev dependency
+
+    지금까지 group=dev를 사용해서 라이브러리들을 설치하였습니다. 이 group=dev는 어떤 의미일까요?
+
+    ▶ pyproject.toml
+
+    종속성은 2가지로 나눌 수 있습니다.
+      - 서버가 실행되는 중에 필요한 종속성 (예: fastapi, uvicorn, pydantic)
+      - 개발하는 중에만 필요하고, 서버가 실행되는 도중에는 전혀 사용되지 않는 종속성
+
+    group=dev → “이 종속성은 개발할 때만 필요하고, 서버가 실행될 때에는 필요하지 않다” 라는 의미입니다.
+    따라서 지금까지 black, ruff, mypy, pytest, coverage 등을 모두 dev group으로 지정하여 설치하였습니다.
+
+    이렇게 종속성을 분리해서 관리하면 프로덕션 환경에서 “쓰지 않을 종속성”을 설치하느라 시간과 공간을 낭비할 필요가 없어집니다.
+    특히 ec2 환경보다는 docker 환경에서(kubernetes) 종속성 분리가 빛을 발합니다.
+      - 매번 업데이트 시마다 docker 이미지를 새로 빌드하는데, 이미지 사이즈 자체가 줄어드니 저장 비용이 감소합니다.
+      - 매번 배포시마다 새 이미지를 다운받고 실행하는데, 이때도 사이즈가 작으면 더 빠르게 배포할 수 있습니다.
+
+    dev group 을 제외하고 설치를 하려면 poetry install --no-root --only main 을 하면 됩니다.
+
+      - no-root: poetry 기본 설정은 프로젝트를 어플리케이션(회사가 직접 사용할 서버 등등.다른 사람이 가져가라고 만든 것이 아님)이 아니라
+                 라이브러리(다른 사람이 가져다 쓸 수 있도록 만든 프로그램)로 간주하는데요,
+                 no-root 옵션을 사용해야 어플리케이션으로 인식해서 자기 자신(root) 을 설치하지 않습니다.
+                 (참고: 🧷 Commands | Documentation | Poetry - Python dependency manage...)
+
+      - only main: dev group이 아닌 main 그룹만 설치하겠다는 의미입니다.
+
+
+자동화 테스트가 필요한 이유
+테스트야 말로 기술자산입니다.
+
+    기술부채라는 말 들어보셨나요? 개발하면서 내린 나쁜 의사결정이 빚처럼 쌓여서 결국 프로젝트를 파멸로 이끈다는 말이죠.
+
+    수 만 줄이 넘는 어플리케이션의 일부분을 수정했을 때, 그 일부분이 버그 없이 여러분이 예상하는 대로 동작할 것이라고 어떻게 보장할까요?
+    자동화 테스트야 말로 여러분이 "수정"을 두려워 하지 않도록 만들어주는 강력한 무기입니다.
+
+    마틴파울러는 그의 저서 리팩토링(2판) 에서 다음과 같이 말했습니다.
+
+    테스트 슈트가 없으면 개발자는 자신이 수정한 코드가 제대로 동작하는지 확인할 방법이 없다.
+    테스트 슈트가 없으면 시스템 이쪽을 수정해도 저쪽이 안전하다는 사실을 검증하지 못한다.
+    그래서 결함율이 높아지기 시작한다. 의도하지 않은 결함 수가 많아지면 개발자는 변경을 주저한다.
+
+    제가 처음 있었던 스타트업에서는 자동화 테스트가 없었는데요, 배포 전에 늘 전 직원이 상품을 결제해보고 일이 환불행사였습니다.
+    그런데 이런 일이 반복되다 보니까 점점 하기 싫은 일이 되더라구요. 점점 빨리, 대충 하게 되고 결제의 모든 경우의 수를 커버하기가 어려워졌습니다.
+    어느 날 결제가 안되는 버그를 제가 만들었습니다. 그러나 테스트가 없었기 때문에 고객으로부터 "결제가 안 돼요"라는 문의전화가 오고 나서야 그 일을 알게 되었죠.
+
+    그때가 되면 이미 늦었습니다. 고객에게 안 좋은 경험이 일어난 것이죠.
+    이런 일이 반복되면 점점 코딩을 하는게 두려워 집니다. 지금 잘 돌아가는 코드에서 아주 조금만 수정을 해도 어디에서 버그가 발생하는지 도무지 알 수가 없는 것이죠
+    테스트는 여러분이 작성한 코드가 의도한 대로 동작하는지를 검증해 줍니다. 사람이 아니라 코드로 코드를 검증하기 때문에 반복적으로 실행하는데 아주 유리합니다.
+    컴퓨터는 실수도 하지 않고, 반복되는 작업에 지치는 일도 없기 때문입니다.
+    결과적으로 테스트는 개발자가 “수정을 두려워하지 않도록 만들어줍니다.” 이것이 여러분에게 테스트가 필요한 이유입니다.
+
+    테스트 스크립트 작성
+▶ pytest_asyncio 설치와 설정
+  poetry add --group=dev pytest-asyncio
+  poetry add --group=dev pytest-asyncio==0.25.0
+
+▶ pyproject.toml
+
+    # 초략
+    [tool.pytest.ini_options]
+    asyncio_mode = "auto"
+    asyncio_default_fixture_loop_scope = "session"
+
+  아직 async test 를 만든적은 없지만, 미리 추가해두겠습니다.
+
+  pytest는 기본적으로 async test 를 무시하는데, pytest-asyncio 플러그인을 사용하면 async 함수도 실행할 수 있습니다.
+
+  async 가 무엇인지는 추후에 자세하게 다루려고 합니다. (깊은 원리를 이해하는게 상당히 복잡한데, 원리를 다 알면 모든 강의를 따라갈 수 있습니다.)
+
+▶ test.sh 생성
+
+  지금까지 설치한 모든 CI 도구들을 한 번에 실행해주는 스크립트를 만들어보겠습니다!
+
+  #! : 시뱅이라고 부름
+
+  shell
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    COLOR_GREEN=`tput setaf 2;`
+    COLOR_NC=`tput sgr0`; # No Color
+
+    echo "Starting black"
+    poetry run black .
+    echo "OK"
+
+    echo "Starting ruff"
+    poetry run ruff check --select I --fix
+    poetry run ruff check --fix
+    echo "OK"
+
+    echo "Starting mypy"
+    poetry run mypy .
+    echo "OK"
+
+    echo "Starting pytest with coverage"
+    poetry run coverage run -m pytest
+    poetry run coverage report -m
+    poetry run coverage html
+    echo "OK"
+
+    echo "${COLOR_GREEN}ALL tests passed successfully!${COLOR_NC}"
+
+
+# 예제 test_st08_pytest_asyncio.py
+
+오류없이 코딩 후
+코드 포매터로 포메팅
+black .
+
+$? 가장 최근에 실행된 명령어의 종료 상태(exit code)를 출력하는 명령어입니다.
+echo $?
+
+출력 0 문제 없음
+0 이상이면 문제 있음
+
+오류가 있는 코드를 짠 후
+black .
+
+echo $?
+
+출력이 0보다 크면 문제있음.
+
+
+./test.sh
+
+chmod +x ./test.sh
+
+
+
+test.ps1 생성 (윈도우 powershell 사용자를 위해서)
+
+주의: 윈도우는 다양한 터미널이 있는데요, (cmd, powershell, WSL) powershell 에서만 동작하는 ps1 파일입니다. (powershell 을 권장합니다!)
+
+    powershell
+        poetry run black .
+        if(!$?) { throw }
+
+        poetry run ruff check --select I --fix
+        if(!$?) { throw }
+
+        poetry run ruff check --fix
+        if(!$?) { throw }
+
+        poetry run mypy .
+        if(!$?) { throw }
+
+        poetry run pytest .
+        if(!$?) { throw }
+
+Write-Host "Done" -ForegroundColor Green
+# refer: https://stackoverflow.com/questions/47032005/why-does-a-powershell-scr
+
+
+
+
+
+Github action
+github action 스크립트 생성
+
+매번 github 에 push 할 때마다 black 부터 pytest 까지 모든 검사가 자동으로 실행되도록 만들어 보겠습니다.
+
+▶ .github/workflows/ci.yml
+    name: CI
+
+    on:
+    push:
+
+    jobs:
+    static-analysis:
+        runs-on: ubuntu-22.04
+        steps:
+        - name: Check out the codes
+            uses: actions/checkout@v2
+
+        - name: Setup python environment
+            id: setup-python
+            uses: actions/setup-python@v2
+            with:
+            python-version: "3.13"
+
+        - name: Install Poetry
+            run: |
+            curl -sSL https://install.python-poetry.org | python3 - --version
+
+        - name: Register Poetry bin
+            run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
+
+        - name: Install dependencies
+            run: poetry install --no-root
+
+        - name: Run Black
+            run: poetry run black . --check
+
+        - name: Run Ruff
+            run: |
+
+on: push → 액션이 언제 실행되는지를 정의합니다. on: push 라면, push 할 때마다 실행합니다.
+https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#on
+
+jobs → 하나의 workflow 는 여러개의 job 으로 구성됩니다.
+https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobs
+
+2개의 job 을 생성했습니다. static-analysis 와 test job 을 2개로 쪼갠 이유는 실행 속도를 개선하기 위해서 입니다. 프로젝트가 점점 커지게 되면 가장 오래 걸리는 작업이 mypy 실행과 전체 단위 테스트 실행인데, 이 둘을 서로 쪼개 병렬로 실행하면 전체 CI 가 더 빨리 끝납니다.
+
+runs-on → job 이 실행되는 machine 을 의미합니다.
+https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#jobsjob_idruns-on
+
+steps → 하나의 job 은 여러개의 step 으로 구성됩니다. step 은 명령을 실행하거나 다른 action 을 실행합니다.
+
+uses → 실행할 action 을 가리킵니다.
+
+with → action 에 전달할 parameter 변수입니다.
+
+run → 실행할 명령어입니다.
+
+run: | yaml 문법입니다. | (파이프라인)을 사용해 value 가 여러 줄 (multiline) 이라는 것을 의미합니다.
+
+
+name: CI
+
+on:   # 스크립트 실행 조건 설정
+  workflow_dispatch:  # 수동으로 실행 가능한 워크플로우를 정의
+                      # push, pull_request처럼 자동 실행되지 않고,
+                      # GitHub 웹 UI에서 "Run workflow" 버튼을 눌러야 실행됩니다.
+  pull_reqeust:   # pull_reqeust가 일어날 때
+  push:   # push할 때
+
+jobs:  # 할 일 설정.  여러개 설정 가능
+# jobs 실행 순서 설정 가능
+
+
+name: CI
+
+on:
+  push:
+
+
+jobs:
+  static-analysis:  # mypy, black, ruff 등 정적 분석
+    runs-on: ubuntu-22.04  # 가상 운영체제 환경에서 실행됨. 실제 프롣덕션(배포)환경에서는 모든 버전을 고정하는 것이 좋다.
+    # 예기치 못하게 버전이 올라가서 장애가 생기는 것을 막기 위해 버전을 고정
+    steps:
+      # 가장 최신 브랜치와 커밋을 가져옴
+      - name: Check out the codes
+        uses: actions/checkout@v2
+
+      - name: Setup python environment
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version 2.1.2
+
+      # poetry를 사용하기 위해 설정
+      - name: Register Poetry bin
+        run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      # 코드 포메터 (black)으로 체크만 함.
+      - name: Run Black
+        run: poetry run black . --check
+
+      - name: Run Ruff
+        run: |
+          poetry run ruff check --select I
+          poetry run ruff check
+
+      - name: Run Mypy
+        run: poetry run mypy .
+
+
+  test:   # 전체 테스트 실행
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out the codes
+        uses: actions/checkout@v2
+
+      - name: Setup python environment
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13"
+
+      # key와 path는 필수
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2
+        with:
+          key: poetry-2.1.2
+          path: ~/.local/   # poetry는 ~/.local에 설치되므로, 이 디렉터리를 통째로 캐시할 것입니다.
+
+      - name: Install Poetry
+        if: steps.cache-poetry.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version 2.1.2
+
+      - name: Register Poetry bin
+        run: echo "${HOME}/.poetry/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Run tests
+        run: |
+          poetry run coverage run -m pytest .
+          poetry run coverage report -m
+
+
+
+GitHub Actions에서 uses와 run의 차이점은 재사용 가능한 액션을 호출하는지, 직접 명령어를 실행하는지의 차이에 있습니다.
+
+uses: 재사용 가능한 액션 호출
+특징
+GitHub 또는 커뮤니티에서 만든 **미리 정의된 작업(step)**을 가져다 쓰는 방식입니다.
+
+owner/repo@version 또는 actions/xxx@v2 형식으로 작성합니다.
+
+보통 복잡한 로직을 캡슐화해두었기 때문에 직접 작성하지 않고도 필요한 기능을 쉽게 쓸 수 있습니다.
+
+run: 셸 커맨드를 직접 실행
+특징
+리눅스 셸 명령어(bash, sh, zsh 등)를 직접 입력해서 실행합니다.
+
+시스템 명령어, Python 명령어, 스크립트 실행 등 자유롭게 작성할 수 있음.
+
+
 
 -------------------------------------------------
 Day3 FastAPI에서 만나는 RESTAPI 설계와 식별자 관리
 -------------------------------------------------
 
-# ch17 [공통]미팅_생성_spec
+## ch17 [공통]미팅_생성_spec
 
 참조
 notion/part2/미팅 생성 API의 스펙 만들기/첫 번째 api, “미팅 생성” api 스펙 만들기
@@ -18,6 +895,25 @@ notion/part2/미팅 생성 API의 스펙 만들기/첫 번째 api, “미팅 생
 개발 시작전 전체 테스트 실행
 
 ORJSON
+
+# app/apis/v1/meeting_router.py 생성
+
+edgedb_router = APIRouter(prefix="/v1/edgedb/meetings", tags=["Meeting"])
+mysql_router = APIRouter(prefix="/v1/mysql/meetings", tags=["Meeting"])
+# 원래는 어떤 db를 쓰는지 url에 적을 필요 없음.
+# 실전에서는 db이름을 url에 넣지마세요!
+
+
+@edgedb_router.post(path="", description="meeting을 생성합니다.")
+async def api_create_meeting_edgedb() -> CreateMeetingResponse:
+    return CreateMeetingResponse(url_code="abc")
+
+
+# controller =  view = path operation function
+# 타입힌트로 리턴값을 정해주면 자동으로 swagger에도 표시됨.
+@mysql_router.post("", description="meeting을 생성합니다.")
+async def api_create_meeting_mysql() -> CreateMeetingResponse:
+    return CreateMeetingResponse(url_code="abc")
 
 
 ## DTO란? (Data Transfer Object)
@@ -39,13 +935,13 @@ dict를 사용할 순 있지만 FastAPI의 기능을 제대로 사용할 수 없
 - dict 대신 dto 를 사용하자!
 
 
-# ch18 [공통]미팅_생성_spec_swagger
+## ch18 [공통]미팅_생성_spec_swagger
 
 참조
 notion/part2/미팅 생성 API의 스펙 만들기/첫 번째 api, “미팅 생성” api 스펙 만들기
 
 
-# ch19 [공통]uuid4_와_base64_로_고유식별자_만들기
+## ch19 [공통]uuid4_와_base64_로_고유식별자_만들기
 
 참조
 notion/part2/미팅 생성 API의 스펙 만들기/uuid 와 base62 를 사용하는 방법 (강의에서 선택한 방법)
@@ -171,7 +1067,7 @@ Base62 연산은 “결정적” 입니다.(deterministic) 결정적이라는 �
 # Evaluate expression
 # 커맨드 엔터 / 실행됨
 
-# ch20 [공통]sqids
+## ch20 [공통]sqids
 
 참조
 notion/part2/미팅 생성 API의 스펙 만들기/sqids 와 현재시각(micro second 까지)를 사용하는 방법
@@ -205,11 +1101,13 @@ pip freeze | grep sqids
 # uuid.uuid4().int는 128비트 정수
 # 하지만 sqids.encode()는 64비트까지만 지원
 
+
+
 -------------------------------------------------
 Day4 EdgeDB와 MySQL로 배우는 실전 DB개발과 테스트 자동화
 -------------------------------------------------
 
-# ch32 Docker를 이용하여 MySQL서버 실행하기
+## ch32 Docker를 이용하여 MySQL서버 실행하기
 
 참조
 notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) 도커로 Mysql8 설치
@@ -236,6 +1134,12 @@ Mysql 설치
     `SELECT VERSION();`
 
     후 major 가 8로 시작한다면 성공입니다!
+
+
+## ch35 [MySQL Ver.]PyTest, Tortoise-ORM을 활용한 TestCode 작성법
+
+참조
+notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) tortoise-orm, cryptography, aerich 설치. 모델 생성
 
 Mysql로 meeting 생성 구현하기
 poetry add "tortoise-orm[asyncmy]==0.23.0"
@@ -334,6 +1238,16 @@ connection 의 개수가 많을 수록 트래픽이 갑작스럽게 쏟아질때
 
 # int의 최대값 21억이지만 이걸 넘어서 사용하게 될 수도 있어서 bigint사용
 
+
+## ch34 aerich를 활용한 Metting Model 마이그레이션
+
+
+tortoise_models/meeting.py 작성
+
+# 아직 정의 되지 않은 모델에 대한 오류 임시 해결
+# async def create_meeting(cls, url_code: str) -> MeetingModel:  # MeetingModel정의가 아직 끝나지 않았기 때문에 에러남.
+async def create_meeting(cls, url_code: str) -> "MeetingModel":  # 쌍따옴표를 사용해 임시로 에러 해결.
+
 # Text : 길이가 길다. 인덱스 안됨.
 # Varchar : 길이 제한, 인덱스 가능.
 # mysql의 varcher는 255이하는 사용되는 크기가 같다.
@@ -365,15 +1279,62 @@ Database확인
 필드 제대로 만들어졌나 확인
 
 
-# ch33 Tortoise-orm 설치 및 모델 생성
+## ch35 [MySQL Ver.]PyTest, Tortoise-ORM을 활용한 TestCode 작성법
 
 참조
 notion/part2/Mysql 로 meeting 생성 구현하기/tortoise-orm, cryptography, aerich 설치. 모델 생성
+notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) httpx 설치, 테스트 작성하기
 
 https://tortoise.github.io/contrib/unittest.html?h=conftest.py#py-test
 
 initializer - 데이터베이스 생성과 연결 수립
 finalizer - 남아있는 연결을 전부 종료(커넥션 종료)
+
+최상위/conftest.py 생성
+pytest는 프로젝트 최상단에 있는 conftest.py 자동으로 읽음
+
+TEST_BASE_URL = "http://test"
+TEST_DB_LABEL = "models"  # 테스트할 DB model
+TEST_DB_TZ = "Asia/Seoul"  # 타임존 설정
+
+def get_test_db_config() -> dict[str, Any]:
+    tortoise_config = generate_config(
+        db_url=f"mysql://{config.MYSQL_USER}:{config.MYSQL_PASSWORD}@{config.MYSQL_HOST}:{config.MYSQL_PORT}/test",
+        app_modules={TEST_DB_LABEL: TORTOISE_APP_MODELS},
+        connection_label=TEST_DB_LABEL,
+        testing=True,  # testDB 자동 생성해줌
+    )
+    tortoise_config["timezone"] = TEST_DB_TZ
+
+    return tortoise_config
+
+# autouse가 활성화 되어 있으면 테스트 함수를 사용하지 않고도 fixture가 생성됨.
+@pytest.fixture(scope="session", autouse=True)
+def initialize(request: FixtureRequest) -> Generator[None, None]:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    # Mocking은 실제 의존성을 대체할 가짜 객체를 만들어서 테스트를 수행하는 것
+    with patch("tortoise.contrib.test.getDBConfig", Mock(return_value=get_test_db_config())):
+        initializer(modules=TORTOISE_APP_MODELS)  # 커맨드 p 눌러보면 인자가 보임
+    yield  # 종료될 때 호출됨.
+    finalizer()  # yield가 없는 일반 fixture는 테스트가 처음 시작할 때 한번호출되고 종료될 때 호출안됨.
+    loop.close()
+
+# 테스트 함수에서 fixture 이름을 인자로 받으면 initialize를 가동시킴
+# def test_func(initialize):
+#     pass
+
+# pytest는 async 함수를 원래는 할 수 없음.
+# pytest-asyncio를 설치하면 pytest도 async함수를 실행 할 수 있음.
+# pytest-asyncio의 event loop와 tortoise의 event_loop가 충돌하는 것을 피하기 위해
+# pytest-asyncio의 event loop를 재정의. (기본 동작을 없앰)
+@pytest_asyncio.fixture(autouse=True, scope="session")
+def event_loop() -> None:
+    pass
+
+**Mocking(모킹)**은
+테스트에서 자주 사용되는 개념으로,
+어떤 객체나 함수의 실제 동작을 흉내 내는 가짜(mock) 객체를 만드는 것
 
 - `initialize()`
 pytest fixture 로, scope 가 session 이기 때문에 테스트 시작과 함께 생성되고,
@@ -383,14 +1344,168 @@ pytest fixture 로, scope 가 session 이기 때문에 테스트 시작과 함�
 - `event_loop()` 나쁜 짓(?) 이긴 하지만 의도적으로 pytest-asyncio 의 event loop 생성을 차단합니다.
 이는 tortoise-orm 과 겹치지 않도록 하기 위함입니다.
 
-pytest는 프로젝트 취상단에 있는 conftest.py 자동으로 읽음
+주의: tortoise 는 async library 임에도 불구하고 pytest-asyncio 를 상정하지 않고 만들어 졌습니다.
+테스트 함수 자체는 async 로 작성할 수 있지만, pytest 는 sync 함수로 인식합니다.
+pytest-asyncio 는 async 테스트 함수를 실행하기 위해 스스로 event loop 를 생성하는데요,
+문제는 tortoise 테스트 프레임워크가 생성하는 이벤트 루프와 서로 충돌합니다! (이 문제를 예방하기 위해 pytest-asyncio 가 event loop 를 생성하지 못하도록 차단하겠습니다.)
+제일 좋은 방법은 tortoise 가 pytest-asyncio 를 지원해 주는 것인데… 버전 업데이트를 계속 기다릴 수는 없으므로,
+이벤트 루프를 차단하는 꼼수(?) 를 사용했습니다.
 
-**Mocking(모킹)**은
-테스트에서 자주 사용되는 개념으로,
-어떤 객체나 함수의 실제 동작을 흉내 내는 가짜(mock) 객체를 만드는 것
 
-# ch34 aerich를 활용한 Metting Model 마이그레이션
+설정이 끝났다면 httpx를 설치한 후 테스트 함수를 작성
+poetry add httpx
+poetry add httpx==0.28.1
 
+DRF(Django Rest Framework)만든 팀이 httpx도 만듬.
+
+fastapi 공식 문서의 테스트 가이드
+https://fastapi.tiangolo.com/advanced/async-tests/#example
+
+
+# app/tests/apis/v1/test_meeting_router_mysql 작성
+
+class TestMeetingRouter(TestCase):
+    async def test_api_create_meeting_mysql(self) -> None:  # 모든 테스트는 None을 반환하는게 정석
+        # Given When Then 구조에서 Given은 자동생성되기 때문에 Given 생략
+
+        # When
+        # AsyncClient는 async연산이 필요해서 async를 사용
+        # async로 열면 async로 닫아야함.
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            response = await client.post("/v1/mysql/meetings")
+
+        response.raise_for_status() #  응답 코드가 에러일 경우 예외(Exception)를 발생시키는 함수
+
+        # Then: 테스트 결과를 검증
+        # API 테스트에서 응답이 성공했는지(200 OK)를 확인하는 코드
+        assert response.status_code == HTTP_200_OK # 여기까지만 하면 실제로 데이터가 생성됬는지 검증이 안됨.
+        # API 테스트 성공 후 데이터 변환을 시도함. API 테스트 전에 시도하면 잘못된 오류코드로 혼란을 유도함.
+        url_code = response.json()["url_code"]
+        assert (await MeetingModel.filter(url_code=url_code).exists()) is True
+
+# FastAPI는 ASGI인터페이스를 구현함.
+# ASGI 규칙대로 호출하면 실제로 http요청을 하지 않아도 마치 http요청을 한것처럼 처리
+# ASGITransport() : ASGI 규칙대로 호출
+#
+# SGI란?
+# ASGI (Asynchronous Server Gateway Interface)
+# Python에서 비동기 웹 애플리케이션을 위한 표준 인터페이스입니다.
+#
+# WSGI의 업그레이드 버전입니다.
+# FastAPI, Django Channels, Starlette, uvicorn 등에서 사용됩니다.
+
+# 구분        WSGI                              ASGI
+# 대상        동기 웹 앱 (Flask, Django 기본)      비동기 웹 앱 (FastAPI, Django Channels 등)
+# 처리 방식    하나의 요청 처리 후 다음 요청           여러 요청을 비동기로 동시에 처리 가능
+# 예         Flask, Django (기본)               FastAPI, Django Channels, Starlette
+# 병렬성      제한적                              ✅ 웹소켓/HTTP/백그라운드 작업 가능
+
+# 사용 상황                                     ASGI가 필요한가?
+# 일반 웹사이트 (블로그, 쇼핑몰 등)                  ❌ 보통 WSGI로 충분
+# 웹소켓, 실시간 채팅, 알림                        ✅ ASGI 필요
+# FastAPI 사용 시                              ✅ ASGI 필요
+# Django에서 Django Channels로 WebSocket 쓸 때  ✅ ASGI 필요
+
+# await란?
+# await는 비동기 함수 (async def) 안에서만 사용할 수 있는 키워드로,
+# 다른 비동기 함수의 실행이 끝날 때까지 기다리는 역할을 합니다.
+
+# HTTP는 다양한 응답을 주고 받을 수 있다.
+
+# with (Context Manager)(컨텍스트 관리자)
+# 리소스를 열고 닫는 과정을 자동으로 관리해주는 매우 강력한 문법입니다.
+# 작업이 끝났을 때 자동으로 작업을 종료 close()를 시켜줌.
+# 작업이 끝났을 때 작업을 종료 close()를 하지 않으면 다른 프로그램이 접근 할 수 없음.
+#
+# 대표적인 리소스 예시
+# 리소스 종류           예시                                                 설명
+# 파일                open("file.txt")                                     파일 핸들 (읽기/쓰기 후 닫아야 함)
+# 네트워크 연결         requests.Session(), socket, FTP                      연결 후 종료해야 함
+# 데이터베이스          connection.cursor()                                  커서 열고 닫기 필요
+# 스레드 락            threading.Lock()                                     락 획득 후 해제 필요
+# 입출력 장치           serial.Serial(), camera.open()                      장치 연결/해제
+# 로그                logging에서 FileHandler, StreamHandler
+# 가상 환경 / 세션      Django request, Flask context, transaction.atomic()
+# 임시 파일/디렉터리     tempfile.NamedTemporaryFile()
+# WebDriver          selenium.webdriver.Chrome()                          브라우저 열고 닫기
+
+
+이것이 TDD(Test Driven Development) 입니다. TDD 는 다음 순서로 개발을 하는 방법론 입니다.
+
+- 요구사항을 검증하는 테스트를 먼저 작성합니다. (응답이 제대로 오는지, 데이터베이스에 정말 insert 되었는지를 확인하는 테스트)
+- 테스트를 실행하고, 실패하는 것을 확인합니다.
+- 요구사항을 실제로 구현합니다.
+- 테스트를 실행하고, 성공하는 것을 확인합니다. (실패했다면 구현중 어디서 실수했는지 파악한 후 수정합니다.)
+
+정리
+
+- pytest 는 프로젝트 제일 최상위의 [`conftest.py`](http://conftest.py) 를 자동으로 읽어들인다. 여기서 원하는 설정 + 필요한 fixture 를 정의할 수 있다.
+- httpx 로 fastapi 에 대한 async test 를 만들 수 있다.
+- 테스트 먼저 작성 한 이후에 구현을 하는것이 TDD 이다.
+
+# CI 수정
+
+  # 테스트 파일이 있는 경우에만 실행 할 수도 있음.
+  # - name: Run tests only if test files exist
+  # run: |
+  # if find . -type f -name 'test_*.py' | grep -q .; then
+  # ...
+  # else
+  # ...
+
+  # 실제로 테스트 할 수 있는 코드가 있는지 판별 후 테스트 수행
+  - name: Run tests only if tests actually exist
+    run: |
+      echo "🔍 Checking if pytest can collect any tests..."
+      TEST_COUNT=$(poetry run pytest --collect-only -q 2>/dev/null | grep -c '::' || true)
+
+      if [ "$TEST_COUNT" -gt 0 ]; then
+        echo "✅ Found $TEST_COUNT tests. Running pytest..."
+        poetry run coverage run -m pytest .
+        poetry run coverage report -m
+      else
+        echo "⚠️ No runnable tests found. Skipping pytest."
+      fi
+
+  # pytest --collect-only : 테스트 수집
+  # pytest --collect-only -q: 테스트 목록만 출력
+  # grep -c '::': 테스트 개수 세기
+  # poetry run pytest ... || true → 테스트 없어서 실패해도 정상 종료 처리 (최종 종료 코드는 0)
+  # grep -c '::'로 실제 수집 가능한 테스트 개수를 정확히 판별
+
+  # 테스트가 없는 경우 pytest는 종료 코드를 5로 반환합니다 → "수행할 테스트가 없음"
+  # GitHub Actions는 0이 아닌 모든 종료 코드를 실패로 간주
+
+  # pytest 종료 코드 (exit code)
+  # 0	테스트 성공 (모든 테스트 통과)
+  # 1	테스트 실패 (어떤 테스트든 실패함)
+  # 2	사용법 에러 (예: 잘못된 인자)
+  # 3	내부 에러
+  # 4	pytest 플러그인 에러
+  # 5	테스트 없음 (no tests collected)
+
+
+## ch36 [MySQL Ver.]MySQL로 meeting 생성 구현하기
+
+참조
+notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) mysql 로 meeting 생성 구현하기
+
+
+from tortoise.backends.base.config_generator import generate_config
+
+
+## ch37
+
+참조
+notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) ci 에 mysql 추가
+
+
+
+-------------------------------------------------
 Day5 EdgeDB와 MySQL로 구현하는 조건 기반 미팅 기능
+-------------------------------------------------
 
 test
