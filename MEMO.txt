@@ -1493,8 +1493,45 @@ class TestMeetingRouter(TestCase):
 참조
 notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) mysql 로 meeting 생성 구현하기
 
+미팅 모델을 생성하는 서비스 구현
+app/services/meeting_service_mysql.py 생성
 
+서비스 라우터에 연결
+app/apis/v1/meeting_router.py 수정
+
+테스트가 성공하는지 검증
+
+프로젝트폴더/conftest.py
+
+generate_config 임포트 잘 안되서 직접 입력
 from tortoise.backends.base.config_generator import generate_config
+
+# 강의랑 다르게 라이브러리를 최신버전으로 설치했더니 여기서 타입 에러가 남.
+# 강의에선 여기서 경고만 나옴
+# type: ignore추가
+@pytest_asyncio.fixture(autouse=True, scope="session")  # type: ignore
+def event_loop() -> None:
+    pass
+
+## type: ignore란?
+# mypy(또는 다른 타입 체커)에게
+# "이 줄의 타입 오류는 무시해 줘"
+# 라고 명시적으로 지시하는 주석입니다.
+
+## 주의할 점
+# 무분별하게 남용하면 타입 검사 무의미
+# → 진짜 오류도 묻히는 경우가 생김
+# 가능한 경우, # type: ignore[code]
+
+# pyproject.toml
+# [tool.pytest.ini_options]
+# filterwarnings=["ignore::DeprecationWarning"] # 경고 끄는 옵션 추가
+
+# 강의에서 event loop를 재정의 한 것 때문에 문제가 생기는 것을 해결하기 위해 pytest 설정 추가
+
+Deprecation Warning 끄기
+pyproject.toml
+filterwarnings=["ignore::DeprecationWarning"]
 
 
 ## ch37
@@ -1502,6 +1539,35 @@ from tortoise.backends.base.config_generator import generate_config
 참조
 notion/part2/Mysql 로 meeting 생성 구현하기/(mysql) ci 에 mysql 추가
 
+.github/workflows/ci.yml 수정
+
+  test:
+    runs-on: ubuntu-22.04
+    env:  # 추가!
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 1234
+      MYSQL_DATABASE: when2meet_vod
+
+			# 추가!
+      - name: Set timezone to KST
+        run: |
+          sudo rm /etc/localtime
+          sudo ln -s /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+
+      # 추가!
+      # 깃허브에는 mysql이 이미 설치 되어 있어서 실행만 하면됨.
+      - name: Start Mysql
+        run: |  # | (파이프라인) 은 yaml 문법인데, value 를 multi-line 으로 쓰고 싶을때 사용합니다.
+          sudo systemctl start mysql
+          mysql -e "use mysql; FLUSH PRIVILEGES; ALTER USER '${{ env.MYSQL_USER }}'@'localhost' IDENTIFIED BY '${{ env.MYSQL_PASSWORD }}';" -uroot -proot
+          mysql -e 'CREATE DATABASE ${{ env.MYSQL_DATABASE }};' -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }}
+
+      - name: Run tests
+        run: |
+          poetry run coverage run -m pytest .
+          poetry run coverage report -m
 
 
 -------------------------------------------------
