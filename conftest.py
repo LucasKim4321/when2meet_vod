@@ -55,6 +55,7 @@ def initialize(request: FixtureRequest) -> Generator[None, None]:
 def event_loop() -> None:
     pass
 
+
 # 강의랑 다르게 라이브러리를 최신버전으로 설치했더니 여기서 타입 에러가 남.
 # 강의에선 여기서 경고만 나옴
 ## type: ignore추가

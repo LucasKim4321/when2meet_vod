@@ -121,6 +121,7 @@ jobs:
       # 깃허브에는 mysql이 이미 설치 되어 있어서 실행만 하면됨.
       - name: Start Mysql
         run: |  # | (파이프라인) 은 yaml 문법인데, value 를 multi-line 으로 쓰고 싶을때 사용합니다.
+          # mysql 
           sudo systemctl start mysql
           mysql -e "use mysql; FLUSH PRIVILEGES; ALTER USER '${{ env.MYSQL_USER }}'@'localhost' IDENTIFIED BY '${{ env.MYSQL_PASSWORD }}';" -uroot -proot
           mysql -e 'CREATE DATABASE ${{ env.MYSQL_DATABASE }};' -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }}
