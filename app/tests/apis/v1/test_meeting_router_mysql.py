@@ -1,5 +1,5 @@
 import httpx
-from starlette.status import HTTP_200_OK
+from starlette.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 from tortoise.contrib.test import TestCase
 
 from app import app
@@ -23,10 +23,55 @@ class TestMeetingRouter(TestCase):
 
         # Then: 테스트 결과를 검증
         # API 테스트에서 응답이 성공했는지(200 OK)를 확인하는 코드
-        assert response.status_code == HTTP_200_OK  # 여기까지만 하면 실제로 데이터가 생성됬는지 검증이 안됨.
+        # pytest 사용
+        # assert response.status_code == HTTP_200_OK  # 여기까지만 하면 실제로 데이터가 생성됬는지 검증이 안됨.
+        # 파이썬에 내장된 테스트 프레임워크 unitest 사용
+        self.assertEqual(response.status_code, HTTP_200_OK)  # 여기까지만 하면 실제로 데이터가 생성됬는지 검증이 안됨.
+
         # API 테스트 성공 후 데이터 변환을 시도함. API 테스트 전에 시도하면 잘못된 오류코드로 혼란을 유도함.
         url_code = response.json()["url_code"]
-        assert (await MeetingModel.filter(url_code=url_code).exists()) is True
+
+        # pytest 사용
+        # assert (await MeetingModel.filter(url_code=url_code).exists()) is True
+        # unitest 사용
+        self.assertTrue(await MeetingModel.filter(url_code=url_code).exists())
+
+    async def test_api_get_meeting_mysql(self) -> None:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            # API요청을 통해서 생성하면 모든 validation을 거처서 생성 되기 때문에 권장함.
+            meeting_create_response = await client.post("/v1/mysql/meetings")
+            url_code = meeting_create_response.json()["url_code"]
+
+            # When
+            response = await client.get(f"v1/mysql/meetings/{url_code}")
+
+        # Then
+        # 이전에 test_api_create_meeting_mysql 여기선 pytest방식으로 테스트
+        # testcase가 unitest상속 받음. (파이썬 언어에 내장된 테스트 프레임워크)
+        # 이번엔 unitest방식으로 테스트
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        response_body = response.json()
+        self.assertEqual(response_body["url_code"], url_code)
+
+    # 추가 테스트 구현
+    async def test_api_get_meeting_mysql_404(self) -> None:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            # Given
+            invalid_url_code = "invalid_url_code"
+
+            # When
+            response = await client.get(f"v1/mysql/meetings/{invalid_url_code}")
+
+        # Then
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        response_body = response.json()
+        self.assertEqual(response_body["detail"], "meeting with url_code: invalid_url_code not found")
 
 
 # FastAPI는 ASGI인터페이스를 구현함.
